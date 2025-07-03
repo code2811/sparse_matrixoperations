@@ -1,104 +1,187 @@
+
+      #!/usr/bin/env python3
+
 """
-SparseMatrix Class
-Author: Frida Ikirezi Kayiranga
-Purpose: Load sparse matrix from file and manage its elements efficiently.
+Sparse Matrix Operations - Created by Frida Ikirezi Kayiranga (GitHub: @code2811)
 """
 
-class SparseMatrix:
-    def __init__(self, rows, cols):
-        self.rows = rows
-        self.cols = cols
-        self.data = {}
+import sys
+import os
+from sparse_matrix import SparseMatrix
 
-    def add_element(self, row, col, value):
-        if value != 0:
-            self.data[(row, col)] = value
 
-    def get_element(self, row, col):
-        return self.data.get((row, col), 0)
+class SparseMatrixApp:
+    def __init__(self):
+        self.matrix1 = None
+        self.matrix2 = None
+        self.user_name = "user"
 
-    def set_element(self, row, col, value):
-        if value != 0:
-            self.data[(row, col)] = value
-        elif (row, col) in self.data:
-            del self.data[(row, col)]
+    def display_welcome(self):
+        print("Welcome to Sparse Matrix Operations!")
+        self.user_name = input("Before we begin, what’s your name? ").strip() or "user"
+        print(f"\nHi {self.user_name}, I’m here to help you work with sparse matrices.")
+        print("This tool was built by Frida Ikirezi Kayiranga (GitHub: @code2811)")
+        print("=" * 60)
 
-    def __str__(self):
-        result = []
-        for i in range(self.rows):
-            row_data = []
-            for j in range(self.cols):
-                row_data.append(str(self.get_element(i, j)))
-            result.append(" ".join(row_data))
-        return "\n".join(result)
+    def load_matrix(self, prompt):
+        while True:
+            try:
+                file_path = input(f"{prompt}\n> ").strip()
+                if not file_path or not os.path.exists(file_path):
+                    print(f"File not found: '{file_path}'. Please check the path and try again.")
+                    continue
 
-    def to_file(self, filename):
-        with open(filename, 'w') as f:
-            f.write(f"{self.rows} {self.cols}\n")
-            for (row, col), value in self.data.items():
-                f.write(f"{row} {col} {value}\n")
+                matrix = SparseMatrix(file_path=file_path)
+                print("Matrix loaded successfully.")
+                print(matrix)
+                return matrix
 
-    @classmethod
-    def from_file(cls, filename):
-        with open(filename, 'r') as file:
-            rows, cols = map(int, file.readline().split())
-            matrix = cls(rows, cols)
-            for line in file:
-                if line.strip():
-                    row, col, value = map(int, line.split())
-                    matrix.add_element(row, col, value)
-        return matrix
+            except ValueError as e:
+                print(f"Error: {e}")
+            except Exception as e:
+                print(f"Unexpected error: {e}")
 
-    @classmethod
-    def from_stream(cls, stream):
-        lines = [line.strip() for line in stream.readlines() if line.strip()]
-        rows, cols = map(int, lines[0].split())
-        matrix = cls(rows, cols)
+            retry = input("Would you like to try another file? (y/n): ").strip().lower()
+            if retry != 'y':
+                return None
 
-        for line in lines[1:]:
-            row, col, val = map(int, line.split())
-            matrix.add_element(row, col, val)
+    def load_matrices(self):
+        print(f"\nLet's load your matrices, {self.user_name}.")
+        self.matrix1 = self.load_matrix("Enter the path to your first matrix file:")
+        if not self.matrix1:
+            return False
 
-        return matrix
+        self.matrix2 = self.load_matrix("Enter the path to your second matrix file:")
+        return bool(self.matrix2)
 
-    def __add__(self, other):
-        if self.rows != other.rows or self.cols != other.cols:
-            raise ValueError("Matrix dimensions must match for addition.")
+    def display_menu(self):
+        print("\n" + "=" * 40)
+        print("Select an operation:")
+        print("1. Add Matrices")
+        print("2. Subtract Matrices")
+        print("3. Multiply Matrices")
+        print("4. Show Matrix Info")
+        print("5. Load New Matrices")
+        print("6. Exit")
+        print("=" * 40)
+
+    def perform_operation(self, choice):
+        if not self.matrix1 or not self.matrix2:
+            print("Please load both matrices before performing operations.")
+            return None
+
+        try:
+            operations = {
+                '1': ('Addition', self.matrix1.add),
+                '2': ('Subtraction', self.matrix1.subtract),
+                '3': ('Multiplication', self.matrix1.multiply),
+            }
+
+            if choice in operations:
+                name, func = operations[choice]
+                print(f"\nPerforming {name.lower()}...")
+                result = func(self.matrix2)
+                print(f"{name} completed successfully.")
+                return result
+            else:
+                print("Invalid operation selected.")
+        except Exception as e:
+            print(f"Operation failed: {e}")
+        return None
+
+    def display_matrix_info(self):
+        if not self.matrix1 or not self.matrix2:
+            print("No matrices are currently loaded.")
+            return
+
+        print("\nMatrix Information:")
+        print(f"Matrix 1:\n{self.matrix1}")
+        print(f"Matrix 2:\n{self.matrix2}")
+
+        m1_dims = self.matrix1.get_dimensions()
+        m2_dims = self.matrix2.get_dimensions()
+
+        print(f"\nMatrix 1: {m1_dims[0]}x{m1_dims[1]} with {self.matrix1.get_non_zero_count()} non-zero elements")
+        print(f"Matrix 2: {m2_dims[0]}x{m2_dims[1]} with {self.matrix2.get_non_zero_count()} non-zero elements")
+
+        print("\nOperation Compatibility:")
+        print(f"Addition/Subtraction: {'Yes' if m1_dims == m2_dims else 'No'}")
+        print(f"Matrix 1 × Matrix 2: {'Yes' if m1_dims[1] == m2_dims[0] else 'No'}")
+        print(f"Matrix 2 × Matrix 1: {'Yes' if m2_dims[1] == m1_dims[0] else 'No'}")
+
+    def save_result(self, matrix):
+        if input("\nWould you like to save the result? (y/n): ").strip().lower() == 'y':
+            output = input("Enter output file path: ").strip()
+            try:
+                matrix.save_to_file(output)
+                print(f"Result saved to '{output}'.")
+            except Exception as e:
+                print(f"Could not save the file: {e}")
+
+    def display_result(self, matrix):
+        print("\nResult Matrix:")
+        print(matrix)
+        dims = matrix.get_dimensions()
+        non_zero = matrix.get_non_zero_count()
+
+        print(f"Dimensions: {dims[0]}x{dims[1]}")
+        print(f"Non-zero elements: {non_zero}")
+
+        if 0 < non_zero <= 20:
+            if input("Would you like to view the matrix data? (y/n): ").strip().lower() == 'y':
+                print("\nMatrix Data:")
+                print(matrix)
+
+    def run(self):
+        self.display_welcome()
+        if not self.load_matrices():
+            print("Could not load matrices. Exiting.")
+            return
+
+        while True:
+            self.display_menu()
+            try:
+                choice = input("Choose an option (1-6): ").strip()
+
+                if choice in ['1', '2', '3']:
+                    result = self.perform_operation(choice)
+                    if result:
+                        self.display_result(result)
+                        self.save_result(result)
+                elif choice == '4':
+                    self.display_matrix_info()
+                elif choice == '5':
+                    if self.load_matrices():
+                        print("Matrices reloaded successfully.")
+                    else:
+                        print("Failed to reload matrices.")
+                elif choice == '6':
+                    print(f"Thank you for using Sparse Matrix Operations, {self.user_name}.")
+                    print("Created by Frida Ikirezi Kayiranga — GitHub: @code2811")
+                    break
+                else:
+                    print("Invalid input. Please choose a number from 1 to 6.")
+            except KeyboardInterrupt:
+                print("\nSession interrupted by user.")
+                break
+            except Exception as e:
+                print(f"Unexpected error: {e}")
+
+
+def main():
+    try:
+        app = SparseMatrixApp()
+        app.run()
+    except Exception as e:
+        print(f"Fatal error: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
+    
+      
+            
+
+    
         
-        result = SparseMatrix(self.rows, self.cols)
-        keys = set(self.data.keys()) | set(other.data.keys())
-
-        for key in keys:
-            sum_value = self.get_element(*key) + other.get_element(*key)
-            result.add_element(*key, sum_value)
-        
-        return result
-
-    def __sub__(self, other):
-        if self.rows != other.rows or self.cols != other.cols:
-            raise ValueError("Matrix dimensions must match for subtraction.")
-        
-        result = SparseMatrix(self.rows, self.cols)
-        keys = set(self.data.keys()) | set(other.data.keys())
-
-        for key in keys:
-            diff_value = self.get_element(*key) - other.get_element(*key)
-            result.add_element(*key, diff_value)
-        
-        return result
-
-    def __mul__(self, other):
-        if self.cols != other.rows:
-            raise ValueError("Matrix multiplication not possible with these dimensions.")
-
-        result = SparseMatrix(self.rows, other.cols)
-
-        for (i, k1), v1 in self.data.items():
-            for j in range(other.cols):
-                v2 = other.get_element(k1, j)
-                if v2 != 0:
-                    current = result.get_element(i, j)
-                    result.set_element(i, j, current + v1 * v2)
-
-        return result
-
