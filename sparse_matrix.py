@@ -1,184 +1,106 @@
 
-      #!/usr/bin/env python3
-
+   # sparse_matrix.py
 """
-Sparse Matrix Operations - Created by Frida Ikirezi Kayiranga (GitHub: @code2811)
+SparseMatrix Class
+-------------------
+Author: Frida Ikirezi Kayiranga (GitHub: @code2811)
+Defines a lightweight data structure and operations for sparse matrices.
 """
 
-import sys
-import os
-from sparse_matrix import SparseMatrix
+class SparseMatrix:
+    def __init__(self, file_path=None, num_rows=0, num_cols=0, data=None):
+        self.num_rows = num_rows
+        self.num_cols = num_cols
+        self.data = data if data else {}
 
+        if file_path:
+            self._load_from_file(file_path)
 
-class SparseMatrixApp:
-    def __init__(self):
-        self.matrix1 = None
-        self.matrix2 = None
-        self.user_name = "user"
+    def _load_from_file(self, file_path):
+        with open(file_path, 'r') as f:
+            lines = [line.strip() for line in f if line.strip()]
+            if not lines[0].startswith("rows=") or not lines[1].startswith("cols="):
+                raise ValueError("Input file has wrong format")
 
-    def display_welcome(self):
-        print("Welcome to Sparse Matrix Operations!")
-        self.user_name = input("Before we begin, what’s your name? ").strip() or "user"
-        print(f"\nHi {self.user_name}, I’m here to help you work with sparse matrices.")
-        print("This tool was built by Frida Ikirezi Kayiranga (GitHub: @code2811)")
-        print("=" * 60)
+            self.num_rows = int(lines[0].split('=')[1])
+            self.num_cols = int(lines[1].split('=')[1])
 
-    def load_matrix(self, prompt):
-        while True:
-            try:
-                file_path = input(f"{prompt}\n> ").strip()
-                if not file_path or not os.path.exists(file_path):
-                    print(f"File not found: '{file_path}'. Please check the path and try again.")
-                    continue
+            for line in lines[2:]:
+                if not (line.startswith('(') and line.endswith(')')):
+                    raise ValueError("Invalid line format: " + line)
+                parts = line[1:-1].split(',')
+                if len(parts) != 3:
+                    raise ValueError("Line must have 3 elements: " + line)
 
-                matrix = SparseMatrix(file_path=file_path)
-                print("Matrix loaded successfully.")
-                print(matrix)
-                return matrix
+                try:
+                    r, c, v = int(parts[0].strip()), int(parts[1].strip()), int(parts[2].strip())
+                    if v != 0:
+                        self.data[(r, c)] = v
+                except ValueError:
+                    raise ValueError("Invalid integer values: " + line)
 
-            except ValueError as e:
-                print(f"Error: {e}")
-            except Exception as e:
-                print(f"Unexpected error: {e}")
+    def get(self, row, col):
+        return self.data.get((row, col), 0)
 
-            retry = input("Would you like to try another file? (y/n): ").strip().lower()
-            if retry != 'y':
-                return None
+    def set(self, row, col, value):
+        if value != 0:
+            self.data[(row, col)] = value
+        elif (row, col) in self.data:
+            del self.data[(row, col)]
 
-    def load_matrices(self):
-        print(f"\nLet's load your matrices, {self.user_name}.")
-        self.matrix1 = self.load_matrix("Enter the path to your first matrix file:")
-        if not self.matrix1:
-            return False
+    def add(self, other):
+        if self.num_rows != other.num_rows or self.num_cols != other.num_cols:
+            raise ValueError("Matrix sizes must match for addition.")
+        result = SparseMatrix(num_rows=self.num_rows, num_cols=self.num_cols)
+        result.data = self.data.copy()
+        for (r, c), v in other.data.items():
+            result.set(r, c, result.get(r, c) + v)
+        return result
 
-        self.matrix2 = self.load_matrix("Enter the path to your second matrix file:")
-        return bool(self.matrix2)
+    def subtract(self, other):
+        if self.num_rows != other.num_rows or self.num_cols != other.num_cols:
+            raise ValueError("Matrix sizes must match for subtraction.")
+        result = SparseMatrix(num_rows=self.num_rows, num_cols=self.num_cols)
+        result.data = self.data.copy()
+        for (r, c), v in other.data.items():
+            result.set(r, c, result.get(r, c) - v)
+        return result
 
-    def display_menu(self):
-        print("\n" + "=" * 40)
-        print("Select an operation:")
-        print("1. Add Matrices")
-        print("2. Subtract Matrices")
-        print("3. Multiply Matrices")
-        print("4. Show Matrix Info")
-        print("5. Load New Matrices")
-        print("6. Exit")
-        print("=" * 40)
+    def multiply(self, other):
+        if self.num_cols != other.num_rows:
+            raise ValueError("Matrix dimensions do not match for multiplication.")
+        result = SparseMatrix(num_rows=self.num_rows, num_cols=other.num_cols)
+        for (i, k), v in self.data.items():
+            for j in range(other.num_cols):
+                val = other.get(k, j)
+                if val != 0:
+                    result.set(i, j, result.get(i, j) + v * val)
+        return result
 
-    def perform_operation(self, choice):
-        if not self.matrix1 or not self.matrix2:
-            print("Please load both matrices before performing operations.")
-            return None
+    def get_dimensions(self):
+        return self.num_rows, self.num_cols
 
-        try:
-            operations = {
-                '1': ('Addition', self.matrix1.add),
-                '2': ('Subtraction', self.matrix1.subtract),
-                '3': ('Multiplication', self.matrix1.multiply),
-            }
+    def get_non_zero_count(self):
+        return len(self.data)
 
-            if choice in operations:
-                name, func = operations[choice]
-                print(f"\nPerforming {name.lower()}...")
-                result = func(self.matrix2)
-                print(f"{name} completed successfully.")
-                return result
-            else:
-                print("Invalid operation selected.")
-        except Exception as e:
-            print(f"Operation failed: {e}")
-        return None
+    def save_to_file(self, output_path):
+        with open(output_path, 'w') as f:
+            f.write(f"rows={self.num_rows}\n")
+            f.write(f"cols={self.num_cols}\n")
+            for (r, c), v in sorted(self.data.items()):
+                f.write(f"({r}, {c}, {v})\n")
 
-    def display_matrix_info(self):
-        if not self.matrix1 or not self.matrix2:
-            print("No matrices are currently loaded.")
-            return
+    def __str__(self):
+        output = [f"rows={self.num_rows}", f"cols={self.num_cols}"]
+        for (r, c), v in sorted(self.data.items()):
+            output.append(f"({r}, {c}, {v})")
+        return '\n'.join(output)
 
-        print("\nMatrix Information:")
-        print(f"Matrix 1:\n{self.matrix1}")
-        print(f"Matrix 2:\n{self.matrix2}")
+           
+       
 
-        m1_dims = self.matrix1.get_dimensions()
-        m2_dims = self.matrix2.get_dimensions()
+      
 
-        print(f"\nMatrix 1: {m1_dims[0]}x{m1_dims[1]} with {self.matrix1.get_non_zero_count()} non-zero elements")
-        print(f"Matrix 2: {m2_dims[0]}x{m2_dims[1]} with {self.matrix2.get_non_zero_count()} non-zero elements")
-
-        print("\nOperation Compatibility:")
-        print(f"Addition/Subtraction: {'Yes' if m1_dims == m2_dims else 'No'}")
-        print(f"Matrix 1 × Matrix 2: {'Yes' if m1_dims[1] == m2_dims[0] else 'No'}")
-        print(f"Matrix 2 × Matrix 1: {'Yes' if m2_dims[1] == m1_dims[0] else 'No'}")
-
-    def save_result(self, matrix):
-        if input("\nWould you like to save the result? (y/n): ").strip().lower() == 'y':
-            output = input("Enter output file path: ").strip()
-            try:
-                matrix.save_to_file(output)
-                print(f"Result saved to '{output}'.")
-            except Exception as e:
-                print(f"Could not save the file: {e}")
-
-    def display_result(self, matrix):
-        print("\nResult Matrix:")
-        print(matrix)
-        dims = matrix.get_dimensions()
-        non_zero = matrix.get_non_zero_count()
-
-        print(f"Dimensions: {dims[0]}x{dims[1]}")
-        print(f"Non-zero elements: {non_zero}")
-
-        if 0 < non_zero <= 20:
-            if input("Would you like to view the matrix data? (y/n): ").strip().lower() == 'y':
-                print("\nMatrix Data:")
-                print(matrix)
-
-    def run(self):
-        self.display_welcome()
-        if not self.load_matrices():
-            print("Could not load matrices. Exiting.")
-            return
-
-        while True:
-            self.display_menu()
-            try:
-                choice = input("Choose an option (1-6): ").strip()
-
-                if choice in ['1', '2', '3']:
-                    result = self.perform_operation(choice)
-                    if result:
-                        self.display_result(result)
-                        self.save_result(result)
-                elif choice == '4':
-                    self.display_matrix_info()
-                elif choice == '5':
-                    if self.load_matrices():
-                        print("Matrices reloaded successfully.")
-                    else:
-                        print("Failed to reload matrices.")
-                elif choice == '6':
-                    print(f"Thank you for using Sparse Matrix Operations, {self.user_name}.")
-                    print("Created by Frida Ikirezi Kayiranga — GitHub: @code2811")
-                    break
-                else:
-                    print("Invalid input. Please choose a number from 1 to 6.")
-            except KeyboardInterrupt:
-                print("\nSession interrupted by user.")
-                break
-            except Exception as e:
-                print(f"Unexpected error: {e}")
-
-
-def main():
-    try:
-        app = SparseMatrixApp()
-        app.run()
-    except Exception as e:
-        print(f"Fatal error: {e}")
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()
     
       
             
