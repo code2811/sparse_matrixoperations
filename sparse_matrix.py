@@ -1,6 +1,6 @@
 
-        
-# sparse_matrix.py
+
+    # sparse_matrix.py
 """
 SparseMatrix Class
 -------------------
@@ -107,8 +107,7 @@ class SparseMatrix:
     
     def __mul__(self, other):
         return self.multiply(other)
-           
-       
+   
 
       
 
