@@ -1,4 +1,5 @@
 
+
       # main.py
 # Author: Frida Ikirezi Kayiranga
 # GitHub: https://github.com/code2811
@@ -37,7 +38,7 @@ def main():
             result = matrix1 * matrix2
             print("\nResult of Multiplication:")
         else:
-            print("❌ Invalid choice. Exiting.")
+            print("Invalid choice. Exiting.")
             return
 
         print(result)
@@ -47,16 +48,15 @@ def main():
         if save == 'y':
             output_file = input("Enter output file name (e.g., result.txt): ").strip()
             result.save_to_file(output_file)
-            print("✅ Result saved to {}".format(output_file))
+            print("Result saved to {}".format(output_file))
         else:
             print("Result not saved.")
 
     except Exception as e:
-        print("❌ Error: {}".format(e))
+        print("Error: {}".format(e))
 
 if __name__ == "__main__":
     main()
- 
-       
+
       
 
