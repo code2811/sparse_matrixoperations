@@ -1,10 +1,3 @@
-<<<<<<< HEAD
-# sparse_matrix.py
-=======
-
-
-    # sparse_matrix.py
->>>>>>> af6d61aea4082de67f8de1824a8ce44d81284fff
 """
 SparseMatrix Class
 -------------------
@@ -101,8 +94,6 @@ class SparseMatrix:
         for (r, c), v in sorted(self.data.items()):
             output.append("({}, {}, {})".format(r, c, v))
         return '\n'.join(output)
-<<<<<<< HEAD
-=======
     
     # Operator overloads for convenience
     def __add__(self, other):
@@ -113,18 +104,4 @@ class SparseMatrix:
     
     def __mul__(self, other):
         return self.multiply(other)
-   
 
-      
-
->>>>>>> af6d61aea4082de67f8de1824a8ce44d81284fff
-    
-    # Operator overloads for convenience
-    def __add__(self, other):
-        return self.add(other)
-    
-    def __sub__(self, other):
-        return self.subtract(other)
-    
-    def __mul__(self, other):
-        return self.multiply(other)
